@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI简笔画识别 - 中小学AI教育</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #72EDF2 0%, #5151E5 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            padding: 30px;
+        }
+
+        /* 教学引导区样式 */
+        .teaching-section {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #5151E5;
+        }
+
+        .teaching-section h2 {
+            color: #5151E5;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .teaching-section p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        /* 适配移动端 */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.6em;
+            }
+        }
+
+        .draw-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #canvas {
+            border: 3px solid #5151E5;
+            border-radius: 10px;
+            cursor: crosshair;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #5151E5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4040c9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #FF9D76;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #ff8a5f;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ee5a52;
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .results-section h2 {
+            margin-bottom: 15px;
+            color: #5151E5;
+            font-size: 1.4em;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .prediction-label {
+            font-weight: 600;
+            color: #333;
+            width: 80px;
+        }
+
+        .prediction-bar {
+            flex-grow: 1;
+            margin: 0 15px;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .prediction-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #72EDF2, #5151E5);
+            transition: width 0.3s;
+        }
+
+        .prediction-confidence {
+            font-weight: 600;
+            color: #5151E5;
+            width: 60px;
+            text-align: right;
+        }
+
+        /* 反馈区域样式 */
+        .feedback-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff8e1;
+            border-radius: 8px;
+            border-left: 4px solid #FFC107;
+            display: none;
+        }
+
+        .feedback-section h3 {
+            color: #FF8F00;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feedback-section p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .feedback-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        #wrong-label {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #correct-label {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+            width: 200px;
+        }
+
+        /* 标签页样式 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #5151E5;
+            border-bottom-color: #5151E5;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 历史记录样式 */
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .history-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .history-item:hover {
+            border-color: #5151E5;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .history-canvas {
+            width: 100%;
+            height: 120px;
+            border-radius: 4px;
+            object-fit: contain;
+            background: #f8f9fa;
+        }
+
+        .history-label {
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* 导入数据集样式 */
+        .import-section {
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .import-section h2 {
+            color: #5151E5;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .import-section p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #5151E5;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .file-label:hover {
+            background: #4040c9;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        #categories-list {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        #categories-list span {
+            background: #5151E5;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 AI简笔画识别 - 中小学AI教育课堂</h1>
+
+        <!-- 教学引导区域 -->
+        <div class="teaching-section">
+            <h2>🤖 AI学习小课堂</h2>
+            <p>AI就像小朋友一样，需要通过"学习"大量数据才能认识事物！你画的每一幅画、给出的每一次反馈，都会成为AI的学习资料。导入专业的Quick Draw数据集，能让AI认识更多图案哦～</p>
+        </div>
+
+        <!-- 功能标签页 -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('draw')">绘画识别</button>
+            <button class="tab" onclick="switchTab('history')">我的绘画记录</button>
+            <button class="tab" onclick="switchTab('import')">导入学习数据</button>
+        </div>
+
+        <!-- 绘画识别标签页 -->
+        <div id="draw-tab" class="tab-content active">
+            <div class="main-content">
+                <div class="draw-section">
+                    <canvas id="canvas" width="400" height="400"></canvas>
+                    <div class="controls">
+                        <button class="btn-danger" onclick="clearCanvas()">清空画布</button>
+                        <button class="btn-primary" onclick="recognize()">让AI猜猜</button>
+                        <button class="btn-secondary" onclick="saveDrawing()">保存我的画</button>
+                    </div>
+                </div>
+
+                <div class="results-section">
+                    <h2>AI识别结果</h2>
+                    <div id="predictions"></div>
+                    
+                    <div class="feedback-section" id="feedback-section">
+                        <h3>AI猜对了吗？</h3>
+                        <p>你的反馈能帮助AI变得更聪明哦！</p>
+                        <div class="feedback-buttons">
+                            <button class="btn-primary" onclick="provideFeedback(true)">✓ 猜对了</button>
+                            <button class="btn-danger" onclick="provideFeedback(false)">✗ 猜错了</button>
+                        </div>
+                        <div id="wrong-label">
+                            <label>正确的答案是：</label>
+                            <input type="text" id="correct-label" placeholder="比如：苹果、小猫、星星">
+                            <button class="btn-primary" onclick="submitCorrection()">告诉AI</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录标签页 -->
+        <div id="history-tab" class="tab-content">
+            <h2>我的绘画记录</h2>
+            <p style="margin-bottom: 15px; color: #666;">点击记录可以重新查看你的画作～</p>
+            <div class="controls">
+                <button class="btn-danger" onclick="clearHistory()">清空所有记录</button>
+                <button class="btn-secondary" onclick="exportHistory()">导出我的作品</button>
+            </div>
+            <div class="history-grid" id="history-grid"></div>
+        </div>
+
+        <!-- 导入数据集标签页 -->
+        <div id="import-tab" class="tab-content">
+            <div class="import-section">
+                <h2>给AI导入学习资料</h2>
+                <p>Quick Draw是谷歌的简笔画数据集，包含数百万幅简笔画。导入后AI能认识更多图案！</p>
+                <p>📥 数据集下载地址：<a href="https://github.com/googlecreativelab/quickdraw-dataset" target="_blank" style="color: #5151E5;">点击下载</a>（选择.ndjson格式文件）</p>
+                
+                <input type="file" id="dataset-file" accept=".ndjson,.json" onchange="importDataset(event)">
+                <label for="dataset-file" class="file-label">选择数据集文件</label>
+                
+                <div id="import-status" class="status"></div>
+                
+                <div style="margin-top: 20px;">
+                    <h3>AI已学会的类别：</h3>
+                    <div id="categories-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量初始化
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentStrokes = [];
+        let currentStroke = [];
+        
+        // 本地存储数据（持久化保存）
+        let drawingHistory = JSON.parse(localStorage.getItem('drawingHistory') || '[]');
+        let trainingData = JSON.parse(localStorage.getItem('trainingData') || '{}');
+        let lastPrediction = null;
+
+        // 画布初始化
+        ctx.lineWidth = 4; // 加粗画笔，更适合学生绘画
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#333';
+
+        // 鼠标绘画事件
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // 触摸支持（平板/手机）
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        // 开始绘画
+        function startDrawing(e) {
+            isDrawing = true;
+            currentStroke = [];
+            const rect = canvas.getBoundingClientRect();
+            // 适配画布缩放，确保绘画坐标正确
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            currentStroke.push([x, y]);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        // 绘画中
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            currentStroke.push([x, y]);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        // 结束绘画
+        function stopDrawing() {
+            if (isDrawing && currentStroke.length > 0) {
+                currentStrokes.push(currentStroke);
+                currentStroke = [];
+            }
+            isDrawing = false;
+        }
+
+        // 清空画布
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentStrokes = [];
+            document.getElementById('predictions').innerHTML = '';
+            document.getElementById('feedback-section').style.display = 'none';
+            lastPrediction = null;
+        }
+
+        // 获取画布图片数据
+        function getImageData() {
+            return canvas.toDataURL();
+        }
+
+        // 特征提取：分析绘画的形状、密度、笔画数等特征
+        function extractFeatures() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // 计算基础特征
+            let totalPixels = 0;
+            let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+            
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    if (data[i + 3] > 0) { // 非透明像素（有笔画）
+                        totalPixels++;
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                    }
+                }
+            }
+            
+            // 处理空白画布情况
+            const width = maxX - minX || 1;
+            const height = maxY - minY || 1;
+            const aspectRatio = width / height;
+            const density = totalPixels / (canvas.width * canvas.height);
+            const strokeCount = currentStrokes.length;
+            
+            return {
+                aspectRatio,    // 宽高比
+                density,        // 像素密度
+                strokeCount,    // 笔画数
+                width,          // 宽度
+                height,         // 高度
+                totalPixels     // 总像素数
+            };
+        }
+
+        // AI识别核心函数
+        function recognize() {
+            if (currentStrokes.length === 0) {
+                alert('请先在画布上画一幅简笔画吧！');
+                return;
+            }
+
+            const features = extractFeatures();
+            const predictions = [];
+
+            // 1. 内置规则识别（基础形状）
+            const builtInPredictions = recognizeBuiltIn(features);
+            predictions.push(...builtInPredictions);
+
+            // 2. 基于用户数据/导入数据集的识别
+            const trainedPredictions = recognizeFromTrainingData(features);
+            predictions.push(...trainedPredictions);
+
+            // 合并结果并排序（置信度从高到低）
+            const mergedPredictions = mergePredictions(predictions);
+            
+            // 显示识别结果
+            displayPredictions(mergedPredictions);
+            lastPrediction = mergedPredictions[0];
+            document.getElementById('feedback-section').style.display = 'block';
+        }
+
+        // 内置规则识别：识别基础形状（适合小学生认知）
+        function recognizeBuiltIn(features) {
+            const predictions = [];
+            const { aspectRatio, density, strokeCount, width, height } = features;
+
+            // 圆形/球
+            if (aspectRatio > 0.8 && aspectRatio < 1.2 && strokeCount <= 2 && density < 0.15) {
+                predictions.push({ label: '圆形/球', confidence: 0.85 });
+            }
+
+            // 正方形
+            if (strokeCount <= 2 && density > 0.05 && density < 0.2 && aspectRatio > 0.8 && aspectRatio < 1.2) {
+                predictions.push({ label: '正方形', confidence: 0.8 });
+            }
+
+            // 长方形
+            if (strokeCount <= 2 && density > 0.05 && density < 0.2 && (aspectRatio < 0.8 || aspectRatio > 1.2)) {
+                predictions.push({ label: '长方形', confidence: 0.78 });
+            }
+
+            // 三角形
+            if (strokeCount <= 3 && density < 0.12) {
+                predictions.push({ label: '三角形', confidence: 0.75 });
+            }
+
+            // 星星
+            if (strokeCount >= 3 && strokeCount <= 6 && density < 0.15) {
+                predictions.push({ label: '星星', confidence: 0.7 });
+            }
+
+            // 房子
+            if (strokeCount >= 3 && aspectRatio > 0.7 && aspectRatio < 1.3) {
+                predictions.push({ label: '房子', confidence: 0.65 });
+            }
+
+            // 花朵
+            if (strokeCount >= 4 && density < 0.2) {
+                predictions.push({ label: '花朵', confidence: 0.6 });
+            }
+
+            // 太阳
+            if (strokeCount >= 8 && aspectRatio > 0.8 && aspectRatio < 1.2) {
+                predictions.push({ label: '太阳', confidence: 0.65 });
+            }
+
+            return predictions;
+        }
+
+        // 基于训练数据的识别（用户反馈/导入的数据集）
+        function recognizeFromTrainingData(features) {
+            const predictions = [];
+            
+            // 遍历所有训练数据类别
+            for (const [label, samples] of Object.entries(trainingData)) {
+                if (samples.length === 0) continue;
+                
+                // 计算当前绘画与训练样本的相似度
+                let similarity = 0;
+                for (const sample of samples) {
+                    similarity += calculateSimilarity(features, sample.features);
+                }
+                similarity /= samples.length; // 平均相似度
+                
+                // 相似度大于0.3才纳入结果
+                if (similarity > 0.3) {
+                    predictions.push({ label, confidence: similarity });
+                }
+            }
+            
+            return predictions;
+        }
+
+        // 计算特征相似度
+        function calculateSimilarity(features1, features2) {
+            // 计算各特征的差异（越小越相似）
+            const aspectDiff = Math.abs(features1.aspectRatio - features2.aspectRatio);
+            const densityDiff = Math.abs(features1.density - features2.density);
+            const strokeDiff = Math.abs(features1.strokeCount - features2.strokeCount) / 10;
+            
+            // 加权计算相似度（1 - 总差异）
+            const similarity = 1 - (aspectDiff * 0.3 + densityDiff * 0.4 + strokeDiff * 0.3);
+            return Math.max(0, similarity); // 确保相似度非负
+        }
+
+        // 合并预测结果（去重并取最高置信度）
+        function mergePredictions(predictions) {
+            const merged = {};
+            
+            // 去重，保留同一标签的最高置信度
+            for (const pred of predictions) {
+                if (merged[pred.label]) {
+                    merged[pred.label] = Math.max(merged[pred.label], pred.confidence);
+                } else {
+                    merged[pred.label] = pred.confidence;
+                }
+            }
+            
+            // 转换为数组并按置信度排序
+            return Object.entries(merged)
+                .map(([label, confidence]) => ({ label, confidence }))
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 5); // 只保留前5个结果
+        }
+
+        // 显示识别结果
+        function displayPredictions(predictions) {
+            const container = document.getElementById('predictions');
+            container.innerHTML = '';
+            
+            if (predictions.length === 0) {
+                container.innerHTML = '<p>😯 AI暂时不认识这个图案，试试给AI反馈帮助它学习吧！</p>';
+                return;
+            }
+            
+            // 渲染每个预测结果
+            predictions.forEach(pred => {
+                const item = document.createElement('div');
+                item.className = 'prediction-item';
+                // 格式化置信度为百分比
+                const confidencePercent = (pred.confidence * 100).toFixed(1);
+                item.innerHTML = `
+                    <span class="prediction-label">${pred.label}</span>
+                    <div class="prediction-bar">
+                        <div class="prediction-fill" style="width: ${confidencePercent}%"></div>
+                    </div>
+                    <span class="prediction-confidence">${confidencePercent}%</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 保存绘画记录
+        function saveDrawing() {
+            if (currentStrokes.length === 0) {
+                alert('请先画一幅画再保存哦！');
+                return;
+            }
+
+            const drawing = {
+                id: Date.now(),
+                imageData: getImageData(),
+                strokes: JSON.parse(JSON.stringify(currentStrokes)), // 深拷贝
+                features: extractFeatures(),
+                timestamp: new Date().toISOString(),
+                prediction: lastPrediction ? lastPrediction.label : '未识别'
+            };
+
+            // 添加到历史记录并保存到本地
+            drawingHistory.unshift(drawing);
+            // 限制历史记录数量（最多50条）
+            if (drawingHistory.length > 50) {
+                drawingHistory.pop();
+            }
+            localStorage.setItem('drawingHistory', JSON.stringify(drawingHistory));
+            
+            alert('✅ 你的画作已经保存成功！');
+        }
+
+        // 处理用户反馈
+        function provideFeedback(isCorrect) {
+            if (!lastPrediction) {
+                alert('请先让AI识别你的画作！');
+                return;
+            }
+
+            if (isCorrect) {
+                // 反馈正确：将当前绘画加入对应类别的训练数据
+                addToTrainingData(lastPrediction.label, {
+                    features: extractFeatures(),
+                    strokes: JSON.parse(JSON.stringify(currentStrokes))
+                });
+                alert('🎉 太棒了！AI记住了这个图案，以后会更准确哦～');
+                document.getElementById('feedback-section').style.display = 'none';
+            } else {
+                // 反馈错误：显示输入正确答案的框
+                document.getElementById('wrong-label').style.display = 'block';
+            }
+        }
+
+        // 提交正确标签（修正AI的错误）
+        function submitCorrection() {
+            const correctLabel = document.getElementById('correct-label').value.trim();
+            if (!correctLabel) {
+                alert('请输入正确的图案名称！');
+                return;
+            }
+
+            // 将绘画加入正确标签的训练数据
+            addToTrainingData(correctLabel, {
+                features: extractFeatures(),
+                strokes: JSON.parse(JSON.stringify(currentStrokes))
+            });
+
+            alert(`✅ 谢谢你的反馈！AI已经学会了这个图案是"${correctLabel}"～`);
+            // 重置反馈区域
+            document.getElementById('feedback-section').style.display = 'none';
+            document.getElementById('wrong-label').style.display = 'none';
+            document.getElementById('correct-label').value = '';
+        }
+
+        // 添加数据到训练集
+        function addToTrainingData(label, data) {
+            if (!trainingData[label]) {
+                trainingData[label] = [];
+            }
+            trainingData[label].push(data);
+            
+            // 每个类别最多保存100个样本（防止数据过多）
+            if (trainingData[label].length > 100) {
+                trainingData[label].shift();
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('trainingData', JSON.stringify(trainingData));
+        }
+
+        // 切换标签页
+        function switchTab(tabName) {
+            // 移除所有激活状态
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 激活当前标签
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            // 按需加载内容
+            if (tabName === 'history') {
+                displayHistory();
+            } else if (tabName === 'import') {
+                displayCategories();
+            }
+        }
+
+        // 显示绘画历史
+        function displayHistory() {
+            const grid = document.getElementById('history-grid');
+            grid.innerHTML = '';
+
+            if (drawingHistory.length === 0) {
+                grid.innerHTML = '<p>暂无绘画记录，快去画一幅吧！</p>';
+                return;
+            }
+
+            // 渲染历史记录
+            drawingHistory.forEach(drawing => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <img src="${drawing.imageData}" class="history-canvas" alt="${drawing.prediction}">
+                    <div class="history-label">${drawing.prediction}</div>
+                    <small>${new Date(drawing.timestamp).toLocaleString()}</small>
+                `;
+                // 点击加载历史绘画
+                item.onclick = () => loadDrawing(drawing);
+                grid.appendChild(item);
+            });
+        }
+
+        // 加载历史绘画到画布
+        function loadDrawing(drawing) {
+            // 切换到绘画标签页
+            switchTab('draw');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentStrokes = JSON.parse(JSON.stringify(drawing.strokes));
+            
+            // 重绘画作
+            currentStrokes.forEach(stroke => {
+                ctx.beginPath();
+                ctx.moveTo(stroke[0][0], stroke[0][1]);
+                stroke.forEach(point => {
+                    ctx.lineTo(point[0], point[1]);
+                });
+                ctx.stroke();
+            });
+
+            // 自动识别（可选）
+            // recognize();
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有绘画记录吗？清空后无法恢复哦～')) {
+                drawingHistory = [];
+                localStorage.setItem('drawingHistory', JSON.stringify(drawingHistory));
+                displayHistory();
+            }
+        }
+
+        // 导出历史记录
+        function exportHistory() {
+            if (drawingHistory.length === 0) {
+                alert('暂无绘画记录可导出！');
+                return;
+            }
+            const dataStr = JSON.stringify(drawingHistory, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `我的简笔画-${new Date().toLocaleDateString()}.json`;
+            link.click();
+            // 释放URL对象
+            URL.revokeObjectURL(url);
+        }
+
+        // 导入Quick Draw数据集
+        function importDataset(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('import-status');
+            status.className = 'status';
+            status.textContent = '正在导入数据集...AI正在学习中～';
+            status.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const lines = content.split('\n').filter(line => line.trim());
+                    
+                    let imported = 0;
+                    const maxPerCategory = 50; // 每个类别最多导入50个样本（防止卡顿）
+                    
+                    // 解析数据集行
+                    lines.slice(0, maxPerCategory).forEach(line => {
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.word && data.drawing) {
+                                // 转换Quick Draw格式到本地格式
+                                const strokes = data.drawing.map(stroke => 
+                                    stroke[0].map((x, i) => [
+                                        x / 256 * canvas.width,  // 缩放坐标到画布尺寸
+                                        stroke[1][i] / 256 * canvas.height
+                                    ])
+                                );
+                                
+                                // 计算特征
+                                const features = {
+                                    strokeCount: strokes.length,
+                                    aspectRatio: 1,
+                                    density: 0.1,
+                                    width: canvas.width,
+                                    height: canvas.height,
+                                    totalPixels: 1000
+                                };
+                                
+                                // 添加到训练数据
+                                addToTrainingData(data.word, { features, strokes });
+                                imported++;
+                            }
+                        } catch (err) {
+                            console.error('解析数据行错误:', err);
+                        }
+                    });
+
+                    // 导入成功提示
+                    status.className = 'status success';
+                    status.textContent = `🎉 成功导入 ${imported} 个简笔画样本！AI学会了更多图案～`;
+                    displayCategories();
+                    
+                    // 3秒后隐藏提示
+                    setTimeout(() => {
+                        status.style.display = 'none';
+                    }, 3000);
+                } catch (error) {
+                    status.className = 'status error';
+                    status.textContent = '❌ 导入失败：' + error.message;
+                }
+            };
+
+            reader.onerror = function() {
+                status.className = 'status error';
+                status.textContent = '❌ 文件读取失败，请检查文件格式！';
+            };
+
+            reader.readAsText(file);
+        }
+
+        // 显示已加载的类别
+        function displayCategories() {
+            const container = document.getElementById('categories-list');
+            const categories = Object.keys(trainingData);
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<p>AI还没学习任何图案，快去画画或导入数据集吧！</p>';
+                return;
+            }
+
+            // 渲染类别标签
+            container.innerHTML = categories.map(cat => 
+                `<span>${cat} (${trainingData[cat].length}个样本)</span>`
+            ).join('');
+        }
+
+        // 页面初始化
+        window.onload = function() {
+            displayCategories();
+            // 适配画布响应式
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        };
+
+        // 画布响应式调整
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const maxWidth = container.clientWidth - 40;
+            if (maxWidth < canvas.width && maxWidth > 200) {
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = maxWidth + 'px';
+            } else {
+                canvas.style.width = '400px';
+                canvas.style.height = '400px';
+            }
+        }
+    </script>
+</body>
+</html>
